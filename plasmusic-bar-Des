@@ -1,0 +1,6 @@
+it is a plugin in plasma panel and a widget on desktop.
+
+# dependence:
+```terminal
+>$sudo pacman -S playerctl
+```
