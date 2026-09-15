@@ -1,490 +1,205 @@
-import "../components"
-import ".."
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
 import QtQuick.Dialogs as QtDialogs
-import org.kde.plasma.core as PlasmaCore
- 
- 
+import org.kde.plasma.private.mpris as Mpris
+
+
 KCM.SimpleKCM {
-    id: fullConfigPage
-    Layout.preferredWidth: form.implicitWidth;
- 
-    property alias cfg_desktopWidgetBg: desktopWidgetBackgroundRadio.value
-    property alias cfg_albumPlaceholder: albumPlaceholderDialog.value
-    property alias cfg_fullViewTextScrollingSpeed: fullViewTextScrollingSpeed.value
-    property alias cfg_fullArtistsPosition: fullArtistsPosition.value
-    property alias cfg_fullTitlePosition: fullTitlePosition.value
-    property alias cfg_fullAlbumPosition: fullAlbumPosition.value
-    property alias cfg_fullAlbumCoverAsBackground: fullAlbumCoverAsBackground.checked
-    property alias cfg_fullHideAlbumForSingles: fullHideAlbumForSingles.checked
-    property alias cfg_fullViewThumbnailVisible: fullViewThumbnailVisible.checked
-    property alias cfg_fullViewProgressBarVisible: fullViewProgressBarVisible.checked
-    property alias cfg_fullViewVolumeControlVisible: fullViewVolumeControlVisible.checked
-    property alias cfg_fullViewShuffleVisible: fullViewShuffleVisible.checked
-    property alias cfg_fullViewPlaybackControlsVisible: fullViewPlaybackControlsVisible.checked
-    property alias cfg_fullViewLoopVisible: fullViewLoopVisible.checked
-    property alias cfg_fullViewPlaybackControlsFillWidth: fullViewPlaybackControlsFillWidth.checked
-    property alias cfg_fullViewSongTextVisible: fullViewSongTextVisible.checked
-    property alias cfg_fullViewSongTextAlignment: fullViewSongTextAlignment.value
-    property alias cfg_fullViewSongTextPosition: fullViewSongTextPosition.value
-    property alias cfg_fullViewMinWidth: fullViewMinWidth.value
-    property alias cfg_fullViewMaxWidth: fullViewMaxWidth.value
-    property alias cfg_showPlayerSelector: showPlayerSelector.checked
-    property alias cfg_fullAlbumCoverRounded: fullAlbumCoverRounded.checked
-    property alias cfg_fullAlbumCoverRadius: fullAlbumCoverRadius.value
-    property alias cfg_hideCanBeRaisedTooltip: hideCanBeRaisedTooltip.checked
- 
+    id: generalConfigPage
+
+    property alias cfg_choosePlayerAutomatically: choosePlayerAutomatically.checked
+    property var cfg_preferredPlayerIdentity
+    property alias cfg_useCustomFont: customFontCheckbox.checked
+    property alias cfg_customFont: fontDialog.fontChosen
+    property alias cfg_volumeStep: volumeStepSpinbox.value
+    property alias cfg_noMediaText: noMediaText.text
+    property alias cfg_showWhenNoMedia: showWhenNoMedia.checked
+
+    property var preferredIdentities: {
+        return cfg_preferredPlayerIdentity ? cfg_preferredPlayerIdentity.split(',').filter(x => x) : []
+    }
+
     Kirigami.FormLayout {
         id: form
- 
+
         Kirigami.Separator {
             Kirigami.FormData.isSection: true
-            Kirigami.FormData.label: i18n("Layout")
+            Kirigami.FormData.label: i18n("Playback source")
         }
- 
-        CheckBox {
-            id: fullViewThumbnailVisible
-            Kirigami.FormData.label: i18n("Show album cover")
-        }
- 
-        CheckBox {
-            id: fullViewProgressBarVisible
-            Kirigami.FormData.label: i18n("Show progress bar")
-        }
- 
+
         ButtonGroup {
-            id: fullViewSongTextAlignment
-            property int value: Qt.AlignHCenter
+            id: playerSourceRadio
         }
- 
-        RadioButton {
-            Kirigami.FormData.label: i18n("Song text alignment:")
-            text: i18n("Left")
-            enabled: fullViewSongTextVisible.checked
-            checked: fullViewSongTextAlignment.value == Qt.AlignLeft
-            onCheckedChanged: () => {
-                if (checked) {
-                    fullViewSongTextAlignment.value = Qt.AlignLeft
-                }
-            }
-            ButtonGroup.group: fullViewSongTextAlignment
-        }
- 
-        RadioButton {
-            text: i18n("Center")
-            enabled: fullViewSongTextVisible.checked
-            checked: fullViewSongTextAlignment.value == Qt.AlignHCenter
-            onCheckedChanged: () => {
-                if (checked) {
-                    fullViewSongTextAlignment.value = Qt.AlignHCenter
-                }
-            }
-            ButtonGroup.group: fullViewSongTextAlignment
-        }
- 
-        RadioButton {
-            text: i18n("Right")
-            enabled: fullViewSongTextVisible.checked
-            checked: fullViewSongTextAlignment.value == Qt.AlignRight
-            onCheckedChanged: () => {
-                if (checked) {
-                    fullViewSongTextAlignment.value = Qt.AlignRight
-                }
-            }
-            ButtonGroup.group: fullViewSongTextAlignment
-        }
- 
-        CheckBox {
-            id: fullViewSongTextVisible
-            Kirigami.FormData.label: i18n("Show song text")
-        }
- 
-        ButtonGroup {
-            id: fullViewSongTextPosition
-            property int value: Full.SongAndArtistTextPosition.UnderProgressBar
-        }
- 
-        RadioButton {
-            Kirigami.FormData.label: i18n("Song text position:")
-            text: i18n("Above progress bar")
-            enabled: fullViewSongTextVisible.checked
-            checked: fullViewSongTextPosition.value === Full.SongAndArtistTextPosition.AboveProgressBar
-            onCheckedChanged: () => {
-                if (checked) {
-                    fullViewSongTextPosition.value = Full.SongAndArtistTextPosition.AboveProgressBar
-                }
-            }
-            ButtonGroup.group: fullViewSongTextPosition
-        }
- 
-        RadioButton {
-            text: i18n("Under progress bar")
-            enabled: fullViewSongTextVisible.checked
-            checked: fullViewSongTextPosition.value === Full.SongAndArtistTextPosition.UnderProgressBar
-            onCheckedChanged: () => {
-                if (checked) {
-                    fullViewSongTextPosition.value = Full.SongAndArtistTextPosition.UnderProgressBar
-                }
-            }
-            ButtonGroup.group: fullViewSongTextPosition
-        }
- 
-        CheckBox {
-            id: fullViewVolumeControlVisible
-            Kirigami.FormData.label: i18n("Show volume control")
-        }
- 
-        CheckBox {
-            id: fullViewShuffleVisible
-            Kirigami.FormData.label: i18n("Show shuffle control")
-        }
- 
-        CheckBox {
-            id: fullViewPlaybackControlsVisible
-            Kirigami.FormData.label: i18n("Show playback controls")
-        }
- 
-        CheckBox {
-            id: fullViewLoopVisible
-            Kirigami.FormData.label: i18n("Show loop control")
-        }
- 
+
         RowLayout {
-            Kirigami.FormData.label: i18n("Fill available space with playback controls")
-            CheckBox {
-                id: fullViewPlaybackControlsFillWidth
+            Kirigami.FormData.label: i18n("Player:")
+            RadioButton {
+                id: choosePlayerAutomatically
+                text: i18n("Choose automatically")
+                ButtonGroup.group: playerSourceRadio
             }
             Kirigami.ContextualHelpButton {
                 toolTipText: i18n(
-                    "When enabled, playback controls are spread across the full width of the widget. When disabled, they are grouped together in the center."
+                    "The player will be chosen automatically based on the currently playing song. If two or more players are playing at the same time, the widget will choose the one that started playing first."
                 )
             }
         }
- 
-        SpinBox {
-            id: fullViewMinWidth
-            Kirigami.FormData.label: i18n("Minimum resizable width:")
-            from: 100
-            to: fullViewMaxWidth.value
-            stepSize: 10
-        }
- 
-        SpinBox {
-            id: fullViewMaxWidth
-            Kirigami.FormData.label: i18n("Maximum resizable width:")
-            from: fullViewMinWidth.value
-            to: 2000
-            stepSize: 10
-        }
- 
-        RowLayout{
-            Kirigami.FormData.label: i18n("Show media player selector")
-            CheckBox {
-                id: showPlayerSelector
+
+        RowLayout {
+            RadioButton {
+                id: selectPreferredPlayer
+                text: i18n("Always:")
+                checked: !choosePlayerAutomatically.checked
+                ButtonGroup.group: playerSourceRadio
             }
+
+            ComboBox {
+                enabled: selectPreferredPlayer.checked
+                id: playerComboBox
+                model: sources
+
+                displayText: {
+                    const selectedPlayersCount = preferredIdentities.length
+                    if (selectedPlayersCount === 0) {
+                        return i18n("None selected")
+                    }
+                    if (selectedPlayersCount === 1) {
+                        return preferredIdentities[0]
+                    }
+                    return i18n("%1 players selected", selectedPlayersCount)
+                }
+
+                delegate: CheckDelegate {
+                    id: playerCheckBox
+                    width: parent.width
+                    text: model.text
+                    checked: preferredIdentities.includes(model.text)
+
+                    onToggled: {
+                        let identities = [...preferredIdentities]
+                        if (checked) {
+                            if (!identities.includes(model.text)) {
+                                identities.push(model.text)
+                            }
+                        } else {
+                            const index = identities.indexOf(model.text)
+                            if (index !== -1) {
+                                identities.splice(index, 1)
+                            }
+                        }
+                        cfg_preferredPlayerIdentity = identities.join(',')
+                    }
+                }
+            }
+
+            Button {
+                enabled: selectPreferredPlayer.checked
+                icon.name: 'refreshstructure'
+                onClicked: {
+                    sources.reload(preferredIdentities)
+                }
+            }
+
             Kirigami.ContextualHelpButton {
                 toolTipText: i18n(
-                    "Disabled when a preferred player is selected under General > Playback Source. Only works when 'Choose automatically' is selected."
+                    "Always display information from the selected player, if it's not running the widget will be hidden. In the dropdown you can choose between all the players that are currently running, if you can't find the one you want, open the player application and reload the list with reload button."
                 )
             }
         }
- 
+
+
         Kirigami.Separator {
             Kirigami.FormData.isSection: true
-            Kirigami.FormData.label: i18n("Album cover")
+            Kirigami.FormData.label: i18n("Font customization")
         }
- 
+
         RowLayout {
-            Kirigami.FormData.label: i18n("Album placeholder:")
- 
+            Kirigami.FormData.label: i18n("Custom font:")
+
+            CheckBox {
+                id: customFontCheckbox
+            }
+
             Button {
                 text: i18n("Choose…")
                 icon.name: "settings-configure"
+                enabled: customFontCheckbox.checked
                 onClicked: {
-                    albumPlaceholderDialog.open()
-                }
-            }
- 
-            Button {
-                text: i18n("Clear")
-                icon.name: "edit-delete"
-                visible: albumPlaceholderDialog.value
-                onClicked: {
-                    albumPlaceholderDialog.value = ""
+                    fontDialog.open()
                 }
             }
         }
- 
-        ColumnLayout {
-            anchors.horizontalCenter: parent.horizontalCenter
-            visible: albumPlaceholderDialog.value
-            Image {
-                Layout.preferredWidth: 200
-                Layout.preferredHeight: 200
-                Layout.alignment: Qt.AlignHCenter
-                source: albumPlaceholderDialog.value
-            }
+
+        Label {
+            visible: customFontCheckbox.checked && fontDialog.fontChosen.family && fontDialog.fontChosen.pointSize
+            text: i18n("%1pt %2", fontDialog.fontChosen.pointSize, fontDialog.fontChosen.family)
+            textFormat: Text.PlainText
+            font: fontDialog.fontChosen
         }
- 
+
+        Kirigami.Separator {
+            Kirigami.FormData.isSection: true
+            Kirigami.FormData.label: i18n("No media found behavior")
+        }
+
         CheckBox {
-            Kirigami.FormData.label: i18n("Round album cover")
-            id: fullAlbumCoverRounded
+            id:showWhenNoMedia
+            Kirigami.FormData.label: i18n("Show widget when no media found")
         }
- 
-        Slider {
-            Layout.preferredWidth: 10 * Kirigami.Units.gridUnit
-            enabled: fullAlbumCoverRounded.checked
-            id: fullAlbumCoverRadius
-            from: 2
-            to: 26
-            stepSize: 2
-            Kirigami.FormData.label: i18n("Album cover radius:")
+
+        TextField {
+            id: noMediaText
+            Kirigami.FormData.label: i18n("Text displayed when no media found:")
+            enabled: showWhenNoMedia.checked
         }
- 
+
         Kirigami.Separator {
             Kirigami.FormData.isSection: true
-            Kirigami.FormData.label: i18n("Song Text Customization")
+            Kirigami.FormData.label: i18n("Controls behaviour")
         }
- 
-        // group for title
- 
-        ButtonGroup {
-            id: fullTitlePosition
-            property int value: SongAndArtistText.TextPosition.FirstLine
-        }
- 
-        RadioButton {
-            Kirigami.FormData.label: i18n("Song title position:")
-            text: i18n("Hidden")
-            checked: fullTitlePosition.value == SongAndArtistText.TextPosition.Hidden
-            onCheckedChanged: () => {
-                if (checked) {
-                    fullTitlePosition.value = SongAndArtistText.TextPosition.Hidden
-                }
-            }
-            ButtonGroup.group: fullTitlePosition
-        }
- 
-        RadioButton {
-            text: i18n("First line")
-            checked: fullTitlePosition.value == SongAndArtistText.TextPosition.FirstLine
-            onCheckedChanged: () => {
-                if (checked) {
-                    fullTitlePosition.value = SongAndArtistText.TextPosition.FirstLine
-                }
-            }
-            ButtonGroup.group: fullTitlePosition
-        }
- 
-        RadioButton {
-            text: i18n("Second line")
-            checked: fullTitlePosition.value == SongAndArtistText.TextPosition.SecondLine
-            onCheckedChanged: () => {
-                if (checked) {
-                    fullTitlePosition.value = SongAndArtistText.TextPosition.SecondLine
-                }
-            }
-            ButtonGroup.group: fullTitlePosition
-        }
- 
- 
-        // group for artists
- 
-        Item {
-            // adds spacing between the groups
-            height: 0.5 * Kirigami.Units.gridUnit
-        }
- 
-        ButtonGroup {
-            id: fullArtistsPosition
-            property int value: SongAndArtistText.TextPosition.SecondLine
-        }
- 
-        RadioButton {
-            Kirigami.FormData.label: i18n("Artists position:")
-            text: i18n("Hidden")
-            checked: fullArtistsPosition.value == SongAndArtistText.TextPosition.Hidden
-            onCheckedChanged: () => {
-                if (checked) {
-                    fullArtistsPosition.value = SongAndArtistText.TextPosition.Hidden
-                }
-            }
-            ButtonGroup.group: fullArtistsPosition
-        }
- 
-        RadioButton {
-            text: i18n("First line")
-            checked: fullArtistsPosition.value == SongAndArtistText.TextPosition.FirstLine
-            onCheckedChanged: () => {
-                if (checked) {
-                    fullArtistsPosition.value = SongAndArtistText.TextPosition.FirstLine
-                }
-            }
-            ButtonGroup.group: fullArtistsPosition
-        }
- 
-        RadioButton {
-            text: i18n("Second line")
-            checked: fullArtistsPosition.value == SongAndArtistText.TextPosition.SecondLine
-            onCheckedChanged: () => {
-                if (checked) {
-                    fullArtistsPosition.value = SongAndArtistText.TextPosition.SecondLine
-                }
-            }
-            ButtonGroup.group: fullArtistsPosition
-        }
- 
-        // group for album
-        Item {
-            // adds spacing between the groups
-            height: 0.5 * Kirigami.Units.gridUnit
-        }
- 
-        ButtonGroup {
-            id: fullAlbumPosition
-            property int value: SongAndArtistText.TextPosition.SecondLine
-        }
- 
-        RadioButton {
-            Kirigami.FormData.label: i18n("Album title position:")
-            text: i18n("Hidden")
-            checked: fullAlbumPosition.value == SongAndArtistText.TextPosition.Hidden
-            onCheckedChanged: () => {
-                if (checked) {
-                    fullAlbumPosition.value = SongAndArtistText.TextPosition.Hidden
-                }
-            }
-            ButtonGroup.group: fullAlbumPosition
-        }
- 
-        RadioButton {
-            text: i18n("First line")
-            checked: fullAlbumPosition.value == SongAndArtistText.TextPosition.FirstLine
-            onCheckedChanged: () => {
-                if (checked) {
-                    fullAlbumPosition.value = SongAndArtistText.TextPosition.FirstLine
-                }
-            }
-            ButtonGroup.group: fullAlbumPosition
-        }
- 
-        RadioButton {
-            text: i18n("Second line")
-            checked: fullAlbumPosition.value == SongAndArtistText.TextPosition.SecondLine
-            onCheckedChanged: () => {
-                if (checked) {
-                    fullAlbumPosition.value = SongAndArtistText.TextPosition.SecondLine
-                }
-            }
-            ButtonGroup.group: fullAlbumPosition
-        }
- 
-        RowLayout{
-            Kirigami.FormData.label: i18n("Hide album name for singles:")
-            CheckBox{
-                id: fullHideAlbumForSingles
-            }
-            Kirigami.ContextualHelpButton {
-                toolTipText: i18n(
-                    "If the album name and the track title match, the album name will be hidden."
-                )
-            }
-        }
- 
-        Kirigami.Separator {
-            Kirigami.FormData.isSection: true
-            Kirigami.FormData.label: i18n("Text scrolling")
-        }
- 
-        Slider {
-            Layout.preferredWidth: 10 * Kirigami.Units.gridUnit
-            id: fullViewTextScrollingSpeed
+
+        SpinBox {
+            id: volumeStepSpinbox
+            Kirigami.FormData.label: i18n("Volume step:")
             from: 1
-            to: 10
-            stepSize: 1
-            Kirigami.FormData.label: i18n("Speed:")
-        }
- 
-        Kirigami.Separator {
-            Kirigami.FormData.isSection: true
-            Kirigami.FormData.label: i18n("Background")
-        }
- 
-        ButtonGroup {
-            id: desktopWidgetBackgroundRadio
-            property int value: PlasmaCore.Types.StandardBackground
-        }
- 
-        RowLayout {
-            Kirigami.FormData.label: i18n("Background (desktop widget only):")
-            RadioButton {
-                text: i18n("Standard")
-                checked: desktopWidgetBackgroundRadio.value == PlasmaCore.Types.StandardBackground
-                onCheckedChanged: () => {
-                    if (checked) {
-                        desktopWidgetBackgroundRadio.value = PlasmaCore.Types.StandardBackground
-                    }
-                }
-                ButtonGroup.group: desktopWidgetBackgroundRadio
-            }
-            Kirigami.ContextualHelpButton {
-                toolTipText: (
-                    "The standard background from the theme."
-                )
-            }
-        }
-        RadioButton {
-            text: i18n("Transparent")
-            checked: desktopWidgetBackgroundRadio.value == PlasmaCore.Types.NoBackground
-            onCheckedChanged: () => {
-                if (checked) {
-                    desktopWidgetBackgroundRadio.value = PlasmaCore.Types.NoBackground
-                }
-            }
-            ButtonGroup.group: desktopWidgetBackgroundRadio
-        }
-        RowLayout {
-            RadioButton {
-                text: i18n("Transparent (Shadow content)")
-                checked: desktopWidgetBackgroundRadio.value == PlasmaCore.Types.ShadowBackground
-                onCheckedChanged: () => {
-                    if (checked) {
-                        desktopWidgetBackgroundRadio.value = PlasmaCore.Types.ShadowBackground
-                    }
-                }
-                ButtonGroup.group: desktopWidgetBackgroundRadio
-            }
-            Kirigami.ContextualHelpButton {
-                toolTipText: (
-                    "The applet won't have a background but a drop shadow of its content done via a shader. The text color will also invert."
-                )
-            }
-        }
- 
-        CheckBox {
-            Kirigami.FormData.label: i18n("Use album cover as background")
-            id: fullAlbumCoverAsBackground
-            text: i18n("(Experimental feature)")
-        }
- 
-        Kirigami.Separator {
-            Kirigami.FormData.isSection: true
-            Kirigami.FormData.label: i18n("Hover tooltip")
-        }
- 
-        CheckBox{
-            id: hideCanBeRaisedTooltip
-            Kirigami.FormData.label: i18n("Hide album art tooltip")
+            to: 100
+            textFromValue: function(text) { return text + "%"; }
+            valueFromText: function(value) { return parseInt(value); }
         }
     }
- 
-    QtDialogs.FileDialog {
-        id: albumPlaceholderDialog
-        property var value: null
-        onAccepted: value = selectedFile
+
+    QtDialogs.FontDialog {
+        id: fontDialog
+        title: i18n("Choose a Font")
+        modality: Qt.WindowModal
+        parentWindow: generalConfigPage.Window.window
+        property font fontChosen: Qt.font()
+        onAccepted: {
+            fontChosen = selectedFont
+        }
+    }
+
+    ListModel {
+        property var mpris2Model: Mpris.Mpris2Model {}
+
+        id: sources
+        function reload(predefinedSources) {
+            sources.clear()
+            for (let i = 0; i < predefinedSources.length; i++) {
+                sources.append({ "text": predefinedSources[i] })
+            }
+
+            const CONTAINER_ROLE = Qt.UserRole + 1
+            for (var i = 1; i < mpris2Model.rowCount(); i++) {
+                const player = mpris2Model.data(mpris2Model.index(i, 0), CONTAINER_ROLE)
+                if (!predefinedSources.includes(player.identity)) {
+                    sources.append({ "text": player.identity })
+                }
+            }
+        }
+        Component.onCompleted: reload(preferredIdentities)
     }
 }

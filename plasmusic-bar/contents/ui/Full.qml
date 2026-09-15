@@ -8,9 +8,49 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.private.mpris as Mpris
 import Qt5Compat.GraphicalEffects
 
-
 Item {
 	id: root
+	
+	// ==================== 新增：SoundBars 音频跳动条组件 ====================
+	component SoundBars: Row {
+		property bool playing: false
+		spacing: 3
+		width: 28
+		height: 24
+		Repeater {
+			model: [12, 18, 10, 16, 14]
+			Rectangle {
+				id: bar
+				width: 2.5
+				height: modelData
+				y: (parent.height - height) / 2
+				radius: 1.5
+				color: Kirigami.Theme.textColor
+				opacity: playing ? 0.9 : 0.4
+				transformOrigin: Item.Center
+				transform: Scale {
+					origin.x: bar.width / 2
+					origin.y: bar.height / 2
+					yScale: playing ? 1 : 0.5
+					SequentialAnimation on yScale {
+						running: playing
+						loops: Animation.Infinite
+						NumberAnimation {
+							to: 0.3 + ((index * 13) % 40) / 100
+							duration: 220 + index * 40
+							easing.type: Easing.InOutSine
+						}
+						NumberAnimation {
+							to: 1
+							duration: 220 + index * 40
+							easing.type: Easing.InOutSine
+						}
+					}
+				}
+			}
+		}
+	}
+	// ========================================================================
 	
 	enum SongAndArtistTextPosition {
 		AboveProgressBar,
@@ -26,32 +66,24 @@ Item {
 	property bool shuffleVisible: plasmoid.configuration.fullViewShuffleVisible
 	property bool playbackControlsVisible: plasmoid.configuration.fullViewPlaybackControlsVisible
 	property bool loopVisible: plasmoid.configuration.fullViewLoopVisible
-	// SoundBars 跳动条：始终显示（它是纯视觉元素，无独立开关）
-	readonly property bool soundBarsVisible: true
 	property bool playbackControlsFitWidth: plasmoid.configuration.fullViewPlaybackControlsFillWidth
 	property bool songTextVisible: plasmoid.configuration.fullViewSongTextVisible
 	property int songTextAlignment: plasmoid.configuration.fullViewSongTextAlignment
 	property bool songTextAboveProgressBar: plasmoid.configuration.fullViewSongTextPosition === Full.SongAndArtistTextPosition.AboveProgressBar
-	
 	// The Full View max and min width is driven by config values. The window can be resized within these bounds; thumbnail and text adapt.
 	readonly property int configMinWidth: plasmoid.configuration.fullViewMinWidth
 	readonly property int maximumWidth: plasmoid.configuration.fullViewMaxWidth
 	property bool fullAlbumCoverRounded: plasmoid.configuration.fullAlbumCoverRounded
 	property int albumCoverRadius: plasmoid.configuration.fullAlbumCoverRadius
-	
-	// Override min width if visible content (e.g. volume/shuffle/loop bar) needs more space
-	readonly property int contentMinWidth: (volumeControlVisible || shuffleVisible || loopVisible || soundBarsVisible) ? 200 : 0
-	// Override min width if visible content (e.g. soundbars bar) needs more space
-	readonly property int contentMinWidth: soundBarsVisible ? 200 : 0
+	// Override min width if visible content (e.g. playback controls) needs more space
+	readonly property int contentMinWidth: row.visible ? row.implicitWidth + 40 : 0
 	readonly property int effectiveMinWidth: Math.min(Math.max(configMinWidth, contentMinWidth), maximumWidth)
-	
 	Layout.minimumWidth: effectiveMinWidth
 	Layout.maximumWidth: maximumWidth
 	Layout.preferredWidth: effectiveMinWidth
 	Layout.preferredHeight: column.implicitHeight
 	Layout.minimumHeight: column.implicitHeight
 	Layout.maximumHeight: column.implicitHeight
-	
 	// Store the original theme colors (root keeps default Kirigami.Theme.inherit: true)
 	readonly property color _originalTextColor: Kirigami.Theme.textColor
 	readonly property color _originalHighlightColor: Kirigami.Theme.highlightColor
@@ -72,13 +104,11 @@ Item {
 			fillMode: Image.PreserveAspectCrop
 			placeholderSource: albumPlaceholder
 			imageSource: player.artUrl
-			
 			onStatusChanged: {
 				if (status === Image.Ready) {
 					imageColors.update()
 				}
 			}
-			
 			Kirigami.ImageColors {
 				id: imageColors
 				source: albumArtFull
@@ -88,7 +118,6 @@ Item {
 				readonly property color fgColor: Kirigami.ColorUtils.tintWithAlpha(bgColor, contrastColor, .6)
 				readonly property color hlColor: Kirigami.ColorUtils.tintWithAlpha(bgColor, contrastColor, .8)
 			}
-			
 			layer.enabled: root.fullAlbumCoverRounded && root.albumCoverRadius > 0
 			layer.effect: OpacityMask {
 				maskSource: Item {
@@ -117,13 +146,10 @@ Item {
 		}
 	}
 	
-	
 	ColumnLayout {
 		id: column
-		
 		spacing: 0
 		anchors.fill: parent
-		
 		// Override theme ONLY for this layout and its children
 		Kirigami.Theme.inherit: false
 		Kirigami.Theme.textColor: albumCoverBackground ? imageColors.fgColor : root._originalTextColor
@@ -136,20 +162,16 @@ Item {
 			visible: plasmoid.configuration.showPlayerSelector
 			&& playerList.count > 2
 			&& player.sourceIdentities == null
-			
 			color: albumCoverBackground
 			? "transparent"
 			: Kirigami.Theme.backgroundColor
-			
 			implicitHeight: Kirigami.Units.gridUnit * 2
-			
 			PlasmaComponents3.TabBar {
 				id: playerSelector
 				objectName: "playerSelector"
 				anchors.fill: parent
 				implicitHeight: contentHeight
 				currentIndex: player.mpris2Model.currentIndex
-				
 				Repeater {
 					id: playerList
 					model: player.mpris2Model
@@ -164,12 +186,10 @@ Item {
 						icon.name: iconName
 						icon.height: Kirigami.Units.iconSizes.small
 						text: isMultiplexer ? i18nc("@action:button", "Choose player automatically") : identity
-						
 						Accessible.onPressAction: clicked()
 						onClicked: {
 							player.mpris2Model.currentIndex = index;
 						}
-						
 						PlasmaComponents3.ToolTip.text: text
 						PlasmaComponents3.ToolTip.delay: Kirigami.Units.toolTipDelay
 						PlasmaComponents3.ToolTip.visible: hovered || (activeFocus && (focusReason === Qt.TabFocusReason || focusReason === Qt.BacktabFocusReason))
@@ -189,14 +209,12 @@ Item {
 			: 1.0
 			Layout.preferredHeight: thumbnailVisible ? width / imageRatio : 0
 			color: 'transparent'
-			
 			PlasmaComponents3.ToolTip {
 				id: raisePlayerTooltip
 				anchors.centerIn: parent
 				text: player.canRaise ? i18n("Bring player to the front") : i18n("This player can't be raised")
 				visible: !plasmoid.configuration.hideCanBeRaisedTooltip && coverMouseArea.containsMouse
 			}
-			
 			MouseArea {
 				id: coverMouseArea
 				anchors.fill: parent
@@ -206,16 +224,13 @@ Item {
 				}
 				hoverEnabled: true
 			}
-			
 			ImageWithPlaceholder {
 				visible: !albumCoverBackground
 				id: albumArtNormal
 				anchors.fill: parent
 				fillMode: Image.PreserveAspectFit
-				
 				placeholderSource: albumPlaceholder
 				imageSource: player.artUrl
-				
 				layer.enabled: root.fullAlbumCoverRounded && root.albumCoverRadius > 0
 				layer.effect: OpacityMask {
 					maskSource: Item {
@@ -284,51 +299,82 @@ Item {
 			scrollingEnabled: widget.expanded
 		}
 		
-		// 声音控制条一栏：音量滑块 + （可选的）shuffle 与 loop 按钮
-		// shuffle / loop 从原来的独立播放控件栏移至此，与音量条并排。
-		// SoundBars：音频跳动条独占一行，纯视觉元素（播放控件与音量调节已移除）
-		Item {
-			visible: volumeControlVisible || shuffleVisible || loopVisible
+		VolumeBar {
+			visible: volumeControlVisible
 			Layout.leftMargin: 40
 			Layout.rightMargin: 40
 			Layout.topMargin: 10
-			Layout.fillWidth: true
-			Layout.preferredHeight: volumeRow.implicitHeight
+			volume: player.volume
+			onSetVolume: (vol) => {
+				player.setVolume(vol)
+			}
+			onVolumeUp: {
+				player.changeVolume(volumeStep / 100, false)
+			}
+			onVolumeDown: {
+				player.changeVolume(-volumeStep / 100, false)
+			}
+		}
+		
+		Item {
+			visible: shuffleVisible || playbackControlsVisible || loopVisible
+			Layout.leftMargin: 20
+			Layout.rightMargin: 20
+			Layout.bottomMargin: 10
+			Layout.fillWidth: playbackControlsFitWidth
+			Layout.alignment: playbackControlsFitWidth ? 0 : Qt.AlignHCenter
+			Layout.preferredWidth: playbackControlsFitWidth ? -1 : row.implicitWidth
+			Layout.preferredHeight: row.implicitHeight
 			
 			RowLayout {
-				id: volumeRow
+				id: row
+				width: playbackControlsFitWidth ? parent.width : implicitWidth
+				height: implicitHeight
 				anchors.centerIn: parent
-				width: parent.width
-				spacing: Kirigami.Units.smallSpacing * 2
 				
-				VolumeBar {
-					Layout.fillWidth: true
-					volume: player.volume
-					onSetVolume: (vol) => {
-						player.setVolume(vol)
-					}
-					onVolumeUp: {
-						player.changeVolume(volumeStep / 100, false)
-					}
-					onVolumeDown: {
-						player.changeVolume(-volumeStep / 100, false)
-					}
+				// 👇👇👇 新增：SoundBars 放在播放控件最左边 👇👇👇
+				SoundBars {
+					playing: player.playbackStatus === Mpris.PlaybackStatus.Playing
+					Layout.alignment: Qt.AlignHCenter
 				}
-				
+
 				CommandIcon {
 					visible: shuffleVisible
 					enabled: player.canChangeShuffle
-					Layout.alignment: Qt.AlignVCenter
+					Layout.alignment: Qt.AlignHCenter
 					size: Kirigami.Units.iconSizes.medium
 					source: "media-playlist-shuffle"
 					onClicked: player.setShuffle(player.shuffle === Mpris.ShuffleStatus.Off ? Mpris.ShuffleStatus.On : Mpris.ShuffleStatus.Off)
 					active: player.shuffle === Mpris.ShuffleStatus.On
 				}
-				
+				CommandIcon {
+					visible: playbackControlsVisible
+					enabled: player.canGoPrevious
+					Layout.alignment: Qt.AlignHCenter
+					size: Kirigami.Units.iconSizes.medium
+					source: "media-skip-backward"
+					onClicked: player.previous()
+				}
+				CommandIcon {
+					visible: playbackControlsVisible
+					enabled: player.playbackStatus === Mpris.PlaybackStatus.Playing ? player.canPause : player.canPlay
+					Layout.alignment: Qt.AlignHCenter
+					size: Kirigami.Units.iconSizes.large
+					source: player.playbackStatus === Mpris.PlaybackStatus.Playing ? "media-playback-pause" : "media-playback-start"
+					onClicked: player.playPause()
+				}
+				CommandIcon {
+					visible: playbackControlsVisible
+					enabled: player.canGoNext
+					Layout.alignment: Qt.AlignHCenter
+					size: Kirigami.Units.iconSizes.medium
+					source: "media-skip-forward"
+					onClicked: player.next()
+				}
 				CommandIcon {
 					visible: loopVisible
 					enabled: player.canChangeLoopStatus
-					Layout.alignment: Qt.AlignVCenter
+					Layout.alignment: Qt.AlignHCenter
 					size: Kirigami.Units.iconSizes.medium
 					source: player.loopStatus === Mpris.LoopStatus.Track ? "media-playlist-repeat-song" : "media-playlist-repeat"
 					active: player.loopStatus != Mpris.LoopStatus.None
@@ -343,24 +389,5 @@ Item {
 				}
 			}
 		}
-		
-		//  SoundBars：音频跳动条独占一行（播放控件 previous/play/next 已移除）
-		// 点击跳动条 = 播放/暂停
-		Item {
-			visible: soundBarsVisible
-			Layout.leftMargin: 20
-			Layout.rightMargin: 20
-			Layout.bottomMargin: 10
-			Layout.fillWidth: true
-			Layout.preferredHeight: Kirigami.Units.iconSizes.medium
-			
-			SoundBars {
-				anchors.centerIn: parent
-				height: parent.height
-				playing: player.playbackStatus === Mpris.PlaybackStatus.Playing
-				onClicked: player.playPause()
-			}
-		}
-		
 	}
 }
